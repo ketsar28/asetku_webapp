@@ -1,9 +1,9 @@
 import { prisma } from "./prisma";
-export async function sendEmail(to: string, subject: string, text: string) {
+export async function sendEmail(to: string, subject: string, text: string, html?: string) {
   if (!process.env.SMTP_HOST) return;
   const nm = (await import("nodemailer")).default; const port = Number(process.env.SMTP_PORT ?? 587);
   await nm.createTransport({ host: process.env.SMTP_HOST, port, secure: port === 465, auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined })
-    .sendMail({ from: process.env.MAIL_FROM ?? process.env.SMTP_USER, to, subject: `[AsetKu] ${subject}`, text });
+    .sendMail({ from: process.env.MAIL_FROM ?? process.env.SMTP_USER, to, subject: `[AsetKu] ${subject}`, text, html: html || undefined });
 }
 export async function sendWA(phone: string, message: string) {
   const token = process.env.FONNTE_TOKEN; if (!token) return;
