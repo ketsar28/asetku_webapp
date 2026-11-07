@@ -1,0 +1,109 @@
+- qr dihapus
+- tim fasility -> tambahan: menu perawatan aset
+- akun penyewa -> bukti upload tf (mandatory), mandatory field di kasih asterisk (*)
+- dialog box/drawer jangan langsung menutup jika di klik dibagian area luar, hanya tertutuk jika klik tombol tutup/x 
+
+
+#### 1. Tambahkan "Kartu Finansial Aset" di Halaman Detail Aset (FITUR KILLER! 💎)                                                                    
+                                                                                                                                                        
+  • Ide: Di halaman detail aset (misal saat admin mengklik salah satu laptop/kamera di daftar aset), buatkan tab/widget: "Riwayat Finansial Aset".      
+  • Apa yang ditampilkan?:                                                                                                                              
+      • Harga Beli Awal (Purchase Cost).                                                                                                                
+      • Nilai Buku Saat Ini (Current Book Value setelah disusutkan).                                                                                    
+      • Total Pendapatan Sewa yang sudah dihasilkan aset tersebut.                                                                                      
+      • Total Biaya Servis/Maintenance yang sudah dihabiskan untuk aset tersebut.                                                                       
+      • Status ROI: Profit / Rugi / Sisa waktu balik modal.                                                                                             
+  • Kenapa ini wajib?: Data ini sudah ada di database kalian (tinggal di-query via relasi loans dan maintenance). Menampilkan ini di UI aset membuktikan
+  100% judul kamu: Inventaris TERINTEGRASI dengan Keuangan!                                                                                             
+                                                                                                                                                        
+  #### 2. Tambahkan Filter Transaksi per Aset di Laporan Arus Kas                                                                                       
+                                                                                                                                                        
+  • Kondisi sekarang: Di halaman page.tsx, filter yang tersedia adalah tanggal, jenis (masuk/keluar), dan metode pembayaran.                            
+  • Penyesuaian: Tambahkan 1 filter dropdown: "Pilih Aset".                                                                                             
+  • Efeknya: Bagian Keuangan bisa melihat riwayat arus kas khusus untuk aset tertentu (misal: ingin mengecek semua perputaran uang khusus mobil         
+  operasional B-1234-XYZ). Di tabel database transactions, kolom asset_id sudah ada, jadi implementasinya sangat ringan!                                
+                                                                                                                                                        
+  #### 3. Pertegas Format Dokumen Cetak (BAST & Invoice Resmi)                                                                                          
+                                                                                                                                                        
+  • Penyesuaian: Pada tampilan cetak kuitansi sewa atau serah terima aset, cantumkan format nomor dokumen resmi, misalnya:                              
+      • Nomor Berita Acara: BAST/ASETKU/2026/XI/LN-001                                                                                                  
+      • Rincian Keuangan:                                                                                                                               
+          • Tarif Dasar Sewa (DPP)
+          • Premi Asuransi Barang (Opsional)
+          • PPN 11%
+          • Total Pembayaran Lunas
+  
+  • Efeknya: Memperlihatkan bahwa sistem ini siap pakai di level institusi/perusahaan resmi.
+
+  ### 1. 🎯 Evaluasi Komparasi: Janji Proposal (MVP) vs Realita Sistem                                                                        
+                                                                                                                                              
+  Di dalam dokumen proposal, kelompok kamu mendefinisikan 4 Fitur / Luaran Minimum (MVP) untuk dituntaskan hingga UAS. Mari kita bandingkan   
+  satu per satu dengan aplikasi yang sudah ada:                                                                                               
+                                                                                                                                              
+   Prioritas MVP di Proposal                                     │ Realita di Sistem Saat Ini                                    │   Status
+  ───────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┼────────────
+   MVP 1: Melihat ketersediaan fasilitas, pilih tanggal,         │ • Ada kalender ketersediaan interaktif                        │    100%
+   kalkulasi sewa, asuransi, PPN otomatis, tanpa bentrok jadwal. │ (AvailabilityCalendar.tsx)• Perhitungan PPN 11% & premi       │  Selesai
+                                                                 │ asuransi otomatis di keranjang• Validasi anti-bentrok jadwal  │
+                                                                 │ di API (route.ts)                                             │
+   MVP 2: Pilih rekening tujuan transfer, upload foto bukti      │ • Form pembayaran multi-rekening bank & QRIS• Upload bukti    │    100%
+   bayar, pantau status pesanan.                                 │ transfer dengan validasi format gambar di server• Status      │  Selesai
+                                                                 │ pesanan dan notifikasi real-time ke akun penyewa & admin      │
+   MVP 3: Admin approve/reject. Jika tolak → auto refund ke      │ • Tombol Approve & Reject di admin panel• Refund otomatis     │    100%
+   Dompet ber-PIN, dan bisa ditarik ke bank.                     │ masuk ke Saldo Dompet AsetKu pemohon• Penarikan dana          │  Selesai
+                                                                 │ (withdrawal) ke rekening bank diamankan PIN 6-digit (proteksi │
+                                                                 │ brute force 5x)                                               │
+   MVP 4: Pencatatan serah terima/kembali barang & pencatatan    │ • Handover & Check-in aset (lengkap dengan denda              │    100%
+   otomatis transaksi uang masuk/keluar ke laporan keuangan      │ keterlambatan & kerusakan)• Jurnal buku kas terbit otomatis   │  Selesai
+   (PDF/Excel).                                                  │ tanpa input manual• Ekspor rekap keuangan ke Excel (.xlsx)    │
+                                                                 │ dan cetak PDF                                                 │
+                                                                                                                                              
+  │ Important                                                                                                               
+  │ Kesimpulan Tech Lead:                                                                                                                     
+  │ Sistem kalian saat ini BUKAN HANYA SUDAH CUKUP, tapi SUDAH 250% MELAMPAUI (OVERSHOOT) DARI APA YANG KALIAN JANJIKAN DI PROPOSAL!          
+  │                                                                                                                                           
+  │ Di proposal kalian hanya menjanjikan 4 MVP dasar di atas. Namun di aplikasi nyata, kalian bahkan sudah punya:                             
+  │                                                                                                                                           
+  │ 1. Modul Jual-Beli Aset dengan penguncian stok (stock locking).                                                                           
+  │ 2. Modul Pemeliharaan & Perawatan Aset (maintenance).                                                                                     
+  │ 3. Modul Stock Opname dengan Scanner QR Kamera Smartphone.                                                                                
+  │ 4. Modul HR & Payroll (Lembur sesuai formula Depnaker, Reimburse klaim nota, dan Cetak Slip Gaji).                                        
+  │ 5. 8 Modul Keuangan Standar Korporat (Depresiasi aset garis lurus, neraca aset real-time, rekonsiliasi kas bank, amortisasi pendapatan    
+  sewa                                                                                                                                        
+  │ bulanan, dan audit trail).                                                                                                                
+  ──────                                                                                                                                      
+  ### 2. 🧩 Apakah 3 Penyesuaian Kemarin Sudah Menutup Semuanya?                                                                              
+                                                                                                                                              
+  Dengan menambahkan 3 penyesuaian yang kita bahas sebelumnya:                                                                                
+                                                                                                                                              
+  1. Kartu Finansial Aset (menampilkan ROI, akumulasi sewa, biaya servis, dan nilai buku di detail aset).                                     
+  2. Filter Transaksi per Aset di Laporan Keuangan Arus Kas.                                                                                  
+  3. Format Dokumen BAST & Invoice Resmi dengan penomoran standar.                                                                            
+                                                                                                                                              
+  Ketiga penyesuaian tersebut berfungsi sebagai "lem perekat" yang mengunci kata "Terintegrasi" dan "Pelaporan Keuangan Otomatis" dari judul  
+  kalian. Ketiganya membuktikan bahwa data inventaris di MVP 1 & 4 benar-benar bermuara ke laporan keuangan tanpa putus.                      
+                                                                                                                                              
+  Jadi, dari segi fungsionalitas perangkat lunak: SUDAH LEBIH DARI CUKUP. JANGAN MENAMBAH FITUR BARU LAGI!                                    
+  (Menambah fitur baru lagi justru berisiko menimbulkan scope creep dan membuat presentasi kalian kehilangan fokus dari 4 MVP yang            
+  dijanjikan).                                                                                                                                
+  ──────                                                                                                                                      
+  ### 3. ⚠ Catatan Penting: Hal yang Perlu Disinkronkan di Dokumen Proposal                                                                   
+                                                                                                                                              
+  Meskipun aplikasinya sudah sempurna, ada 3 detail administratif di file proposal T1_PPPTIK_KEL07_IF701_ASETKU.docx yang WAJIB kalian        
+  perbaiki sebelum dikumpulkan:                                                                                                               
+                                                                                                                                              
+  1. NIM Anggota Masih Bertuliskan (NIM):                                                                                                     
+  Di tabel Anggota dan Pembagian Peran, NIM rekan kamu masih belum diisi:                                                                     
+      • Handika Nur Ichsan (NIM) → Harap isi NIM aslinya.                                                                                     
+      • Ibrahim Saleh Siregar (NIM) → Harap isi NIM aslinya.                                                                                  
+  2. Inkonsistensi Database di Dokumen:
+      • Di proposal pada kolom Teknologi / alat tertulis: SQLite/PostgreSQL.
+      • Padahal di kenyataan project kalian menggunakan: MySQL (lewat Laragon/Prisma).
+      • Saran: Ubah teks di dokumen tersebut menjadi MySQL agar tidak jadi celah pertanyaan dosen penguji.
+  3. Skenario Demo saat Ujian / Presentasi:
+  Di dokumen ada bagian Rencana Pengujian Sederhana. Nanti saat demo di depan dosen, cukup lakukan 3 aksi persis seperti yang tertulis di     
+  proposal:
+      • Skenario 1: Buka aset, tunjukkan kalender ketersediaan terkunci pada tanggal yang sudah dipesan.
+      • Skenario 2: Ajukan sewa → admin tolak pesanan → tunjukkan saldo dompet penyewa bertambah otomatis (refund berhasil).
+      • Skenario 3: Lakukan penarikan saldo dompet ke rekening bank menggunakan PIN 6 digit (salah PIN tertolak, benar PIN sukses masuk mutasi
+      kas).

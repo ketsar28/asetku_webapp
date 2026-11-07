@@ -1,0 +1,26 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const rp = (n: unknown) => `Rp ${Math.round(Number(n ?? 0)).toLocaleString("id-ID")}`;
+const dt = (d?: Date | null) => (d ? d.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "long", year: "numeric" }) : "-");
+const page = (b: string, st = 200) => new NextResponse(`<!doctype html><html lang="id"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bukti Pembelian</title><body style="font-family:system-ui,Arial;background:#F4F5F2;margin:0;padding:16px;color:#1f2937">${b}</body></html>`, { status: st, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store" } });
+const PAY: Record<string, string> = { cash: "Tunai", transfer: "Transfer Bank", qris: "QRIS", wallet: "Saldo Dompet" };
+/** Bukti pembelian dan berita acara serah terima aset, siap cetak untuk ditandatangani. */
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const s = await getSession(); if (!s) return NextResponse.redirect(new URL("/login", req.url));
+  const p = await prisma.purchase.findUnique({ where: { id: Number(params.id) }, include: { user: { select: { name: true, phone: true, email: true } } } });
+  if (!p || (s.role === "user" && p.userId !== s.id)) return page("<p>Bukti pembelian tidak ditemukan.</p>", 404);
+  const all = !!new URL(req.url).searchParams.get("all") && !!p.groupNo;
+  const list = await prisma.purchase.findMany({ where: all ? { groupNo: p.groupNo, userId: p.userId, status: { in: ["approved", "completed"] } } : { id: p.id }, include: { asset: { include: { category: true } } }, orderBy: { id: "asc" } });
+  const sum = (f: (x: (typeof list)[number]) => unknown) => list.reduce((t, x) => t + Number(f(x)), 0), done = list.every((x) => x.status === "completed");
+  const rows = list.map((x, i) => `<tr><td>${i + 1}</td><td>${esc(x.asset.assetCode)} — ${esc(x.asset.name)}<br><span style="color:#64748b;font-size:12px">${esc(x.asset.category.name)}${x.asset.serialNumber ? ` • SN ${esc(x.asset.serialNumber)}` : ""}</span></td><td style="text-align:right">${rp(x.price)}</td></tr>`).join("");
+  return page(`<style>.k{max-width:680px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;font-size:14px}table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;vertical-align:top;border-bottom:1px solid #e2e8f0;text-align:left}.l{width:34%;color:#64748b;border:0}.btn{background:#078A4B;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;margin:0 auto 12px;display:block}.sg{display:flex;justify-content:space-between;margin-top:48px;text-align:center}.sg div{width:44%;border-top:1px solid #94a3b8;padding-top:6px}@media print{.btn{display:none}body{background:#fff!important}.k{border:0}}</style>
+<button class="btn" onclick="print()">Cetak / simpan PDF</button><div class="k">
+<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #14342F;padding-bottom:10px"><img src="/logo.png" alt="" style="height:52px"><div><b style="font-size:16px">AsetKu Corporate</b><br><span style="font-size:12px;color:#64748b">Bukti Pembelian &amp; Berita Acara ${done ? "Serah Terima" : "Pemesanan"} Aset • ${esc(all ? p.groupNo : p.orderNumber)}</span></div></div>
+<p style="margin:14px 0 6px;font-weight:700">Data pembeli</p><table><tr><td class="l">Nama</td><td style="border:0">${esc(p.user.name)}</td></tr><tr><td class="l">Telepon / email</td><td style="border:0">${esc(p.user.phone ?? "-")} / ${esc(p.user.email)}</td></tr><tr><td class="l">Tanggal pesan</td><td style="border:0">${dt(p.createdAt)}</td></tr>${done ? `<tr><td class="l">Tanggal serah terima</td><td style="border:0">${dt(p.handedOverAt)}</td></tr>` : ""}</table>
+<p style="margin:14px 0 6px;font-weight:700">Barang yang dibeli</p><table><tr><th>No</th><th>Aset</th><th style="text-align:right">Harga</th></tr>${rows}</table>
+<table style="margin-top:8px"><tr><td class="l">Subtotal harga</td><td style="border:0;text-align:right">${rp(sum((x) => x.price))}</td></tr>${sum((x) => x.insuranceFee) > 0 ? `<tr><td class="l">Asuransi barang</td><td style="border:0;text-align:right">${rp(sum((x) => x.insuranceFee))}</td></tr>` : ""}<tr><td class="l">PPN 11%</td><td style="border:0;text-align:right">${rp(sum((x) => x.vatAmount))}</td></tr><tr><td class="l"><b>Total</b></td><td style="border:0;text-align:right"><b>${rp(sum((x) => x.totalAmount))}</b></td></tr><tr><td class="l">Pembayaran</td><td style="border:0;text-align:right">${esc(PAY[p.paymentMethod] ?? p.paymentMethod)}${p.bankName ? ` (${esc(p.bankName)})` : ""} • ${p.paymentStatus === "paid" ? "Lunas" : "Belum lunas"}</td></tr></table>
+<p style="font-size:12px;color:#475569;margin-top:12px">Barang yang dibeli menjadi milik pembeli sejak serah terima dan tidak dapat dikembalikan lewat menu sewa${list.some((x) => x.insurance) ? ". Pesanan ini memakai asuransi barang" : ""}.</p>
+<div class="sg"><div>Pembeli<br>${esc(p.user.name)}</div><div>Petugas AsetKu</div></div></div>`);
+}
