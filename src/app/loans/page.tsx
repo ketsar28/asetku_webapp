@@ -23,7 +23,9 @@ export default function Loans() {
   }
   async function sendProof(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    try { await api(`/api/loans/${proof}/proof`, "POST", Object.fromEntries(new FormData(e.currentTarget))); setProof(null); setErr(""); load(); } catch (x: any) { setErr(x.message); }
+    const f: any = Object.fromEntries(new FormData(e.currentTarget));
+    if (!f.proofUrl) { setErr("Bukti transfer wajib diunggah."); return; }
+    try { await api(`/api/loans/${proof}/proof`, "POST", f); setProof(null); setErr(""); load(); } catch (x: any) { setErr(x.message); }
   }
   const verify = (action: string, note?: string) => api(`/api/loans/${ver.id}/verify`, "POST", { action, note }).then(() => { setVer(null); load(); }).catch((x) => { setErr(x.message); setVer(null); });
   const pay = (id: number) => api("/api/payments", "POST", { loanId: id }).then((d) => { location.href = d.redirectUrl; }).catch((x) => setErr(x.message));
@@ -117,13 +119,13 @@ export default function Loans() {
         </form></Modal>}
       {ext && <Modal title={`Perpanjang sewa ${ext.asset.name}`} onClose={() => setExt(null)}><form onSubmit={extend} className="space-y-3">
         <p className="rounded-lg bg-paper p-3 text-sm">Batas kembali saat ini: <b>{tgl(ext.expectedReturnDate)}</b>. Perpanjangan dihitung mulai hari berikutnya, lalu disetujui dan dibayar seperti pesanan biasa.</p>
-        <Field l="Perpanjang sampai tanggal"><input name="newEnd" type="date" min={new Date(+new Date(ext.expectedReturnDate) + 86400000).toISOString().slice(0, 10)} className="inp" required /></Field><button className="btn w-full">Ajukan perpanjangan</button></form></Modal>}
+        <Field l="Perpanjang sampai tanggal" req><input name="newEnd" type="date" min={new Date(+new Date(ext.expectedReturnDate) + 86400000).toISOString().slice(0, 10)} className="inp" required /></Field><button className="btn w-full">Ajukan perpanjangan</button></form></Modal>}
       {proof && <Modal title="Upload bukti transfer" onClose={() => setProof(null)}>
         <form onSubmit={sendProof} className="space-y-3">
           {err && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-700">{err}</p>}
           <p className="rounded-lg bg-paper p-2 text-sm">Transfer ke: <b>{process.env.NEXT_PUBLIC_TRANSFER_INFO ?? "hubungi admin untuk nomor rekening"}</b></p>
           <PayFields label="Cara transfer" />
-          <UploadField kind="proofs" name="proofUrl" label="Foto / screenshot bukti transfer" />
+          <UploadField kind="proofs" name="proofUrl" label="Foto / screenshot bukti transfer" required={true} />
           <button className="btn w-full">Kirim bukti</button>
         </form></Modal>}
       {ver && <Modal title="Verifikasi bukti transfer" onClose={() => setVer(null)}>

@@ -17,7 +17,7 @@ export const tgl = (d?: string) => (d ? new Date(d).toLocaleDateString("id-ID", 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); addEventListener("keydown", k); return () => removeEventListener("keydown", k); }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-0 sm:items-center sm:p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">{title}</h2><button onClick={onClose} aria-label="Tutup" className="text-2xl leading-none text-slate-400">×</button></div>
         {children}
@@ -26,7 +26,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 export const Empty = ({ text }: { text: string }) => <p className="py-10 text-center text-sm text-slate-500">{text}</p>;
-export const Field = ({ l, children }: { l: string; children: React.ReactNode }) => <label className="block space-y-1 text-sm font-medium">{l}{children}</label>;
+export const Field = ({ l, req, children }: { l: string; req?: boolean; children: React.ReactNode }) => <label className="block space-y-1 text-sm font-medium">{l}{req && <span className="ml-1 font-bold text-red-500">*</span>}{children}</label>;
 export const api = async (url: string, method = "GET", body?: unknown) => {
   const r = await fetch(url, { method, body: body ? JSON.stringify(body) : undefined });
   const d = await r.json().catch(() => ({}));
@@ -39,14 +39,14 @@ export function PayFields({ label = "Metode pembayaran", def }: { label?: string
   const [m, setM] = useState(def?.paymentMethod ?? "cash");
   return (
     <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
-      <Field l={label}><select name="paymentMethod" className="inp" value={m} onChange={(e) => setM(e.target.value)}><option value="cash">Tunai (Cash)</option><option value="transfer">Transfer Bank</option><option value="qris">QRIS</option></select></Field>
-      {m !== "cash" && <Field l={m === "qris" ? "Bank / e-wallet penerbit QRIS" : "Bank"}><select name="bankName" defaultValue={def?.bankName ?? undefined} className="inp" required>{(m === "qris" ? [...BANKS, ...EWALLETS] : BANKS).map((b) => <option key={b}>{b}</option>)}</select></Field>}
-      {m !== "cash" && <><Field l="Nama pemilik rekening asal"><input name="accountName" defaultValue={def?.accountName ?? ""} className="inp" required={m === "transfer"} placeholder="mis. Budi Santoso" /></Field><Field l={m === "qris" ? "No. rekening / HP e-wallet (opsional)" : "No. rekening asal"}><input name="accountNo" defaultValue={def?.accountNo ?? ""} inputMode="numeric" className="inp" required={m === "transfer"} placeholder="mis. 1234567890" /></Field></>}
+      <Field l={label} req><select name="paymentMethod" className="inp" value={m} onChange={(e) => setM(e.target.value)}><option value="cash">Tunai (Cash)</option><option value="transfer">Transfer Bank</option><option value="qris">QRIS</option></select></Field>
+      {m !== "cash" && <Field l={m === "qris" ? "Bank / e-wallet penerbit QRIS" : "Bank"} req><select name="bankName" defaultValue={def?.bankName ?? undefined} className="inp" required>{(m === "qris" ? [...BANKS, ...EWALLETS] : BANKS).map((b) => <option key={b}>{b}</option>)}</select></Field>}
+      {m !== "cash" && <><Field l="Nama pemilik rekening asal" req={m === "transfer"}><input name="accountName" defaultValue={def?.accountName ?? ""} className="inp" required={m === "transfer"} placeholder="mis. Budi Santoso" /></Field><Field l={m === "qris" ? "No. rekening / HP e-wallet (opsional)" : "No. rekening asal"} req={m === "transfer"}><input name="accountNo" defaultValue={def?.accountNo ?? ""} inputMode="numeric" className="inp" required={m === "transfer"} placeholder="mis. 1234567890" /></Field></>}
     </div>
   );
 }
 
-export function UploadField({ kind, name, label, current }: { kind: "assets" | "proofs" | "employees" | "receipts" | "claims"; name: string; label: string; current?: string | null }) {
+export function UploadField({ kind, name, label, current, required }: { kind: "assets" | "proofs" | "employees" | "receipts" | "claims"; name: string; label: string; current?: string | null; required?: boolean }) {
   const [url, setUrl] = useState(current ?? ""); const [prev, setPrev] = useState(current ?? ""); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return; setErr(""); setBusy(true); setPrev(URL.createObjectURL(f));
@@ -54,11 +54,11 @@ export function UploadField({ kind, name, label, current }: { kind: "assets" | "
     catch (x: any) { setErr(x.message); setPrev(""); setUrl(""); } finally { setBusy(false); }
   }
   return (
-    <div className="space-y-2 text-sm"><p className="font-medium">{label}</p>
+    <div className="space-y-2 text-sm"><p className="font-medium">{label}{required && <span className="ml-1 font-bold text-red-500">*</span>}</p>
       {prev && <img src={prev} alt="Pratinjau" className="h-32 rounded-lg border object-cover" />}
-      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={pick} className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-2" />
+      <input type="file" accept="image/jpeg,image/png,image/webp" required={required && !url} onChange={pick} className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-2" />
       {busy && <p className="text-xs text-slate-500">Mengunggah…</p>}{err && <p className="text-xs text-red-700">{err}</p>}
-      <input type="hidden" name={name} value={url} /></div>
+      <input type="hidden" name={name} value={url} required={required} /></div>
   );
 }
 

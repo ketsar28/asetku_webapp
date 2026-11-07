@@ -34,7 +34,8 @@ export default function Checkout() {
   const payWallet = () => run(api("/api/payments/wallet", "POST", { loanId: rows[0].id, pin }), "Pembayaran dengan saldo berhasil.").then(() => { setPin(""); setSel(null); api("/api/wallet").then(setW); });
   const goGateway = () => api("/api/payments", "POST", { loanId: rows[0].id, channel: sel!.key }).then((d) => { location.href = d.redirectUrl; }).catch((x) => setErr(x.message));
   function sendProof(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget));
+    e.preventDefault(); const f: any = Object.fromEntries(new FormData(e.currentTarget));
+    if (!f.proofUrl) { setErr("Bukti transfer wajib diunggah."); return; }
     run(api(`/api/loans/${rows[0].id}/proof`, "POST", { ...f, paymentMethod: sel!.method, bankName: sel!.bank }), "Bukti terkirim. Admin akan memverifikasi pembayaran Anda.").then(() => setSel(null));
   }
   if (!rows.length) return err ? <p role="alert" className="text-red-700">{err}</p> : <Empty text="Memuat pesanan…" />;
@@ -65,15 +66,15 @@ export default function Checkout() {
               {sel.kind === "balance" && <div className="space-y-3 text-sm"><p>Saldo Anda: <b className="text-moss">{rp(w?.balance ?? 0)}</b> • Tagihan: <b>{rp(total)}</b></p>
                 {!w?.hasPin ? <p className="rounded bg-amber-50 p-2 text-amber-800">Buat PIN dulu di menu <a className="font-bold underline" href="/wallet">Dompet</a>.</p>
                   : (w?.balance ?? 0) < total ? <p className="rounded bg-amber-50 p-2 text-amber-800">Saldo belum cukup untuk tagihan ini. Pilih metode lain.</p>
-                  : canPay && <><Field l="PIN Dompet (6 angka)"><input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} className="inp tracking-[0.5em]" /></Field><button className="btn w-full" disabled={pin.length !== 6} onClick={payWallet}>Bayar dengan saldo</button></>}</div>}
+                  : canPay && <><Field l="PIN Dompet (6 angka)" req><input type="password" inputMode="numeric" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} className="inp tracking-[0.5em]" /></Field><button className="btn w-full" disabled={pin.length !== 6} onClick={payWallet}>Bayar dengan saldo</button></>}</div>}
               {sel.kind === "cash" && <p className="text-sm">Bayar tunai kepada admin saat mengambil aset. Pembayaran dicatat otomatis saat serah terima.</p>}
               {sel.acct && <div className="rounded-lg bg-paper p-3 text-sm"><p>Transfer ke {sel.bank}</p><p className="text-xl font-extrabold tracking-wide">{sel.acct.no}</p><p>a.n. {sel.acct.name}</p><button type="button" className="btn-ghost mt-2" onClick={() => copy(sel.acct!.no)}>Salin nomor</button></div>}
               {sel.key === "m-qris" && <div className="text-center"><img src="/qris.png" alt="Kode QRIS" className="mx-auto h-56 w-56 rounded-lg border object-contain" onError={(e) => (e.currentTarget.style.display = "none")} /><p className="text-xs text-slate-500">Letakkan gambar QRIS Anda di public/qris.png</p></div>}
               {(sel.acct || sel.key === "m-qris" || sel.gateway) && <p className="text-sm">Nominal: <b className="text-moss">{rp(total)}</b> <button type="button" className="ml-2 text-xs underline" onClick={() => copy(String(Math.round(total)))}>salin</button></p>}
               {canPay && !sel.gateway && sel.kind !== "cash" && sel.kind !== "balance" && <form onSubmit={sendProof} className="space-y-3 border-t pt-3">
-                <Field l={sel.method === "qris" ? "Nama pengirim (opsional)" : "Nama pemilik rekening pengirim"}><input name="accountName" className="inp" required={sel.method === "transfer"} /></Field>
-                <Field l={sel.method === "qris" ? "No. HP / rekening (opsional)" : "No. rekening pengirim"}><input name="accountNo" inputMode="numeric" className="inp" required={sel.method === "transfer"} /></Field>
-                <UploadField kind="proofs" name="proofUrl" label="Foto / screenshot bukti pembayaran" /><button className="btn w-full">Kirim bukti pembayaran</button></form>}
+                <Field l={sel.method === "qris" ? "Nama pengirim (opsional)" : "Nama pemilik rekening pengirim"} req={sel.method === "transfer"}><input name="accountName" className="inp" required={sel.method === "transfer"} /></Field>
+                <Field l={sel.method === "qris" ? "No. HP / rekening (opsional)" : "No. rekening pengirim"} req={sel.method === "transfer"}><input name="accountNo" inputMode="numeric" className="inp" required={sel.method === "transfer"} /></Field>
+                <UploadField kind="proofs" name="proofUrl" label="Foto / screenshot bukti pembayaran" required={true} /><button className="btn w-full">Kirim bukti pembayaran</button></form>}
               {canPay && sel.gateway && <button className="btn w-full" onClick={goGateway}>Bayar sekarang</button>}
               {!canPay && pending && <button className="btn w-full" onClick={() => save(sel)}>Simpan pilihan pembayaran</button>}
               {canPay && sel.kind === "cash" && <button className="btn w-full" onClick={() => save(sel)}>Pilih bayar tunai</button>}

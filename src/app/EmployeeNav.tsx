@@ -4,7 +4,7 @@ import NotifBell from "./NotifBell";
 import { usePathname } from "next/navigation";
 export default function EmployeeNav({ name }: { name: string }) {
   const path = usePathname();
-  const items = [["/overtime", "Input Lembur"], ["/reimburse", "Reimburse"], ["/profile", "Profil"]];
+  const items = [["/overtime", "Input Lembur"], ["/reimburse", "Reimburse"], ["/maintenance", "Perawatan Aset"], ["/profile", "Profil"]];
   return (
     <header className="sticky top-0 z-40 border-b bg-white print:hidden">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2">

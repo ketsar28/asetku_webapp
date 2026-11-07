@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { route, need } from "@/lib/api";
 import { payInfo, stamp } from "@/lib/finance";
-export const GET = route(["admin", "staff", "user"], async (s, req: Request) => {
+export const GET = route(["admin", "staff", "user", "employee"], async (s, req: Request) => {
   const q = new URL(req.url).searchParams;
   const search = q.get("q") ?? "";
   return prisma.asset.findMany({

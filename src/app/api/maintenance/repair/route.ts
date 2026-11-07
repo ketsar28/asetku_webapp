@@ -2,13 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { route, need, ApiError } from "@/lib/api";
 import { payInfo } from "@/lib/finance";
 /** Daftar aset yang terdeteksi rusak / perlu perawatan dan belum punya perawatan berjalan. */
-export const GET = route(["admin", "staff"], async () => prisma.asset.findMany({
+export const GET = route(["admin", "staff", "employee"], async () => prisma.asset.findMany({
   where: { condition: { not: "good" }, status: { notIn: ["borrowed", "disposed", "sold"] }, maintenance: { none: { status: { not: "completed" } } } },
   select: { id: true, assetCode: true, name: true, condition: true, location: true, updatedAt: true, category: { select: { name: true } } },
   orderBy: [{ condition: "asc" }, { updatedAt: "desc" }], take: 200,
 }));
 /** Perbaiki aset rusak setelah konfirmasi: {assetIds, description?, vendor?, cost?, done?, paymentMethod?...}. done=true langsung selesai, kondisi kembali baik. */
-export const POST = route(["admin", "staff"], async (s, req: Request) => {
+export const POST = route(["admin", "staff", "employee"], async (s, req: Request) => {
   const b = await req.json();
   const ids: number[] = Array.from(new Set((Array.isArray(b.assetIds) ? b.assetIds : []).map(Number).filter(Boolean))) as number[];
   need(ids.length > 0 && ids.length <= 50, "Pilih 1–50 aset");

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { route, need, ApiError } from "@/lib/api";
 import { payInfo } from "@/lib/finance";
-export const GET = route(["admin", "staff"], async () => prisma.maintenanceRecord.findMany({ include: { asset: true }, orderBy: { maintenanceDate: "desc" }, take: 200 }));
-export const POST = route(["admin", "staff"], async (s, req: Request) => {
+export const GET = route(["admin", "staff", "employee"], async () => prisma.maintenanceRecord.findMany({ include: { asset: true }, orderBy: { maintenanceDate: "desc" }, take: 200 }));
+export const POST = route(["admin", "staff", "employee"], async (s, req: Request) => {
   const b = await req.json(); need(b.assetId && b.description?.trim() && b.maintenanceDate, "Aset, tanggal, dan deskripsi wajib diisi");
   const a = await prisma.asset.findUnique({ where: { id: Number(b.assetId) } });
   if (!a) throw new ApiError(404, "Aset tidak ditemukan");
@@ -15,7 +15,7 @@ export const POST = route(["admin", "staff"], async (s, req: Request) => {
     return m;
   });
 });
-export const PATCH = route(["admin", "staff"], async (s, req: Request) => {
+export const PATCH = route(["admin", "staff", "employee"], async (s, req: Request) => {
   const b = await req.json(); need(["in_progress", "completed"].includes(b.status), "Status tidak valid");
   return prisma.$transaction(async (tx) => {
     const m = await tx.maintenanceRecord.update({ where: { id: b.id }, data: { status: b.status, cost: Number(b.cost) > 0 ? b.cost : undefined, completionDate: b.status === "completed" ? new Date() : null } });

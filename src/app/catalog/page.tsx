@@ -3,12 +3,11 @@ import { useEffect, useState } from "react";
 import { api, Badge, Empty, Field, Modal, PayFields, parseSpecs, rp } from "../ui";
 import { charges, saleCharges } from "@/lib/pricing";
 import AvailabilityCalendar from "../AvailabilityCalendar";
-import QrScanner from "../QrScanner";
 const unit = (a: any) => (a.rentalUnit === "month" ? "bulan" : "hari");
 export default function Catalog() {
   const [assets, setAssets] = useState<any[]>([]); const [cat, setCat] = useState(""); const [n, setN] = useState(24);
   const [cart, setCart] = useState<number[]>([]); const [open, setOpen] = useState(false); const [msg, setMsg] = useState(""); const [err, setErr] = useState("");
-  const [d, setD] = useState({ start: "", end: "" }); const [info, setInfo] = useState<any>(null); const [scan, setScan] = useState(false); const [agree, setAgree] = useState(false); const [scanMsg, setScanMsg] = useState(""); const [buyCart, setBuyCart] = useState<number[]>([]); const [buyOpen, setBuyOpen] = useState(false); const [agreeBuy, setAgreeBuy] = useState(false); const [buyErr, setBuyErr] = useState("");
+  const [d, setD] = useState({ start: "", end: "" }); const [info, setInfo] = useState<any>(null); const [agree, setAgree] = useState(false); const [buyCart, setBuyCart] = useState<number[]>([]); const [buyOpen, setBuyOpen] = useState(false); const [agreeBuy, setAgreeBuy] = useState(false); const [buyErr, setBuyErr] = useState("");
   useEffect(() => { load(); }, []);
   const load = (q = "") => api(`/api/assets?q=${encodeURIComponent(q)}`).then(setAssets).catch((e) => setErr(e.message));
   const cats = Array.from(new Set(assets.map((a) => a.category.name)));
@@ -41,7 +40,7 @@ export default function Catalog() {
   return (
     <div className="space-y-4 pb-20">
       <div className="flex flex-wrap items-center gap-3"><h1 className="mr-auto text-2xl font-extrabold">Pilih Aset untuk Disewa atau Dibeli</h1>
-        <input className="inp max-w-xs" placeholder="Cari nama atau kode…" onChange={(e) => load(e.target.value)} /><button className="btn-ghost" onClick={() => { setScan(true); setScanMsg(""); }}>Scan QR</button></div>
+        <input className="inp max-w-xs" placeholder="Cari nama atau kode…" onChange={(e) => load(e.target.value)} /></div>
       <div className="flex flex-wrap gap-2">{["", ...cats, "__sale"].map((c) => <button key={c} onClick={() => { setCat(c); setN(24); }} className={`rounded-full border px-3 py-1 text-sm font-medium ${cat === c ? "border-moss bg-moss text-white" : "border-slate-300 bg-white"}`}>{c === "__sale" ? "Dijual" : c || "Semua"}</button>)}</div>
       {msg && <p className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{msg}</p>}{!open && err && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</p>}
       {list.length === 0 ? <Empty text="Tidak ada aset yang cocok." /> :
@@ -60,12 +59,11 @@ export default function Catalog() {
         {cart.length > 0 && <div className="flex items-center gap-3"><p className="text-sm"><b>{cart.length}</b> aset untuk disewa</p><button className="btn" onClick={() => { setOpen(true); setErr(""); }}>Atur sewa & ajukan</button></div>}
         {buyCart.length > 0 && <div className="flex items-center gap-3"><p className="text-sm"><b>{buyCart.length}</b> aset untuk dibeli • <b>{rp(buyTotal)}</b></p><button className="btn" onClick={() => { setBuyOpen(true); setBuyErr(""); setAgreeBuy(false); }}>Atur pembelian & ajukan</button></div>}
       </div></div>}
-      {scan && <Modal title="Scan QR aset" onClose={() => setScan(false)}><QrScanner onCode={(code) => { const a = assets.find((x) => x.assetCode.toLowerCase() === code.trim().toLowerCase()); if (a) { setScan(false); setInfo(a); } else setScanMsg(`Kode ${code} tidak ditemukan atau aset sedang tidak tersedia.`); }} />{scanMsg && <p className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-800">{scanMsg}</p>}</Modal>}
       {info && <Modal title={info.name} onClose={() => setInfo(null)}>
         <div className="space-y-3 text-sm">
           {info.imageUrl && <img src={info.imageUrl} alt={info.name} className="w-full rounded-lg object-cover" />}
           <div className="flex flex-wrap items-center gap-2"><Badge v={info.status} /><span className="text-slate-500">{info.assetCode} • {info.category.name}{info.location ? ` • ${info.location}` : ""}</span></div>
-          <p className="text-lg font-extrabold text-moss">{saleOnly(info) ? "Hanya dijual" : <>{Number(info.rentalRate) > 0 ? `Sewa ${rp(info.rentalRate)} / ${unit(info)}` : "Sewa gratis"} <span className="text-xs font-normal text-slate-500">belum termasuk PPN 11%</span></>}</p>
+          <p className="lg:text-lg font-extrabold text-moss">{saleOnly(info) ? "Hanya dijual" : <>{Number(info.rentalRate) > 0 ? `Sewa ${rp(info.rentalRate)} / ${unit(info)}` : "Sewa gratis"} <span className="text-xs font-normal text-slate-500">belum termasuk PPN 11%</span></>}</p>
           {forSale(info) && <p className="text-lg font-extrabold text-ink">Beli {rp(info.salePrice)} <span className="text-xs font-normal text-slate-500">harga jual final</span></p>}
           {info.description && <p className="text-slate-700">{info.description}</p>}
           {!saleOnly(info) && <AvailabilityCalendar assetId={info.id} />}
@@ -80,7 +78,7 @@ export default function Catalog() {
           <ul className="divide-y rounded-lg border text-sm">{buyPicked.map((a) => <li key={a.id} className="flex items-center justify-between gap-2 p-2"><span>{a.name}<span className="block text-xs text-slate-500">{a.assetCode} • {a.category.name}</span></span><span className="flex items-center gap-2"><b>{rp(a.salePrice)}</b><button type="button" aria-label="Hapus" className="text-red-700" onClick={() => { toggleBuy(a.id); if (buyPicked.length === 1) setBuyOpen(false); }}>×</button></span></li>)}</ul>
           <p className="rounded-lg bg-paper p-2 text-sm">Jumlah barang: <b>{buyPicked.length}</b> • Harga {rp(buyTotal)} + PPN 11% {rp(buyVat)} = <b className="text-moss">{rp(buyTotal + buyVat)}</b></p>
           <p className="text-xs text-slate-500">Pembelian tidak memakai tanggal atau durasi sewa. Asuransi barang bisa ditambahkan (opsional) di halaman pembayaran.</p>
-          <Field l="Keperluan"><textarea name="purpose" rows={2} className="inp" required /></Field>
+          <Field l="Keperluan" req><textarea name="purpose" rows={2} className="inp" required /></Field>
           <p className="text-xs text-slate-500">Stok aset ditahan setelah Anda mengajukan. Setelah disetujui admin, bayar lewat transfer bank, QRIS, saldo dompet, atau tunai saat mengambil aset.</p>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={agreeBuy} onChange={(e) => setAgreeBuy(e.target.checked)} /><span>Saya menyetujui <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold text-moss underline">syarat dan ketentuan</a> dan memahami aset ini <b>dibeli, bukan disewa</b>.</span></label>
           <button className="btn w-full" disabled={!agreeBuy}>Ajukan pembelian</button>
@@ -89,11 +87,11 @@ export default function Catalog() {
         <form onSubmit={submit} className="space-y-3">
           {err && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-700">{err}</p>}
           <ul className="divide-y rounded-lg border text-sm">{picked.map((a) => <li key={a.id} className="flex items-center justify-between gap-2 p-2"><span>{a.name}<span className="block text-xs text-slate-500">{Number(a.rentalRate) ? `${rp(a.rentalRate)} / ${unit(a)}` : "Gratis"}</span></span><span className="flex items-center gap-2"><b>{days ? rp(fee(a)) : "-"}</b><button type="button" aria-label="Hapus" className="text-red-700" onClick={() => toggle(a.id)}>×</button></span></li>)}</ul>
-          <div className="grid grid-cols-2 gap-3"><Field l="Tanggal mulai"><input type="date" min={new Date().toISOString().slice(0, 10)} className="inp" required value={d.start} onChange={(e) => setD({ ...d, start: e.target.value })} /></Field>
-            <Field l="Tanggal selesai"><input type="date" min={d.start} className="inp" required value={d.end} onChange={(e) => setD({ ...d, end: e.target.value })} /></Field></div>
+          <div className="grid grid-cols-2 gap-3"><Field l="Tanggal mulai" req><input type="date" min={new Date().toISOString().slice(0, 10)} className="inp" required value={d.start} onChange={(e) => setD({ ...d, start: e.target.value })} /></Field>
+            <Field l="Tanggal selesai" req><input type="date" min={d.start} className="inp" required value={d.end} onChange={(e) => setD({ ...d, end: e.target.value })} /></Field></div>
           <p className="rounded-lg bg-paper p-2 text-sm">Lama sewa: <b>{days ? `${days} hari` : "-"}</b> • Sewa {days ? rp(rentSum) : "-"} + PPN 11% {days ? rp(vatSum) : "-"} = <b className="text-moss">{days ? rp(total) : "-"}</b></p>
           <p className="text-xs text-slate-500">Asuransi barang bisa ditambahkan (opsional) di halaman pembayaran.</p>
-          <Field l="Keperluan"><textarea name="purpose" rows={2} className="inp" required /></Field>
+          <Field l="Keperluan" req><textarea name="purpose" rows={2} className="inp" required /></Field>
           <p className="text-xs text-slate-500">Setelah disetujui admin, bayar lewat transfer bank atau QRIS lalu unggah buktinya di menu Sewa Saya, atau bayar tunai saat mengambil aset.</p>
           <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span>Saya menyetujui <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold text-moss underline">syarat dan ketentuan sewa</a>.</span></label>
           <button className="btn w-full" disabled={!days || !picked.length || !agree}>Ajukan sewa</button>

@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { api, Badge, Empty, Field, Modal, PayFields, UploadField, rp, tgl } from "../ui";
 export default function Assets() {
-  const [rows, setRows] = useState<any[]>([]); const [cats, setCats] = useState<any[]>([]); const [edit, setEdit] = useState<any>(null); const [qr, setQr] = useState<any>(null);
+  const [rows, setRows] = useState<any[]>([]); const [cats, setCats] = useState<any[]>([]); const [edit, setEdit] = useState<any>(null);
   const [cat, setCat] = useState(""); const [n, setN] = useState(50); const [hist, setHist] = useState<any>(null); const [err, setErr] = useState(""); const [q, setQ] = useState("");
   const load = () => api(`/api/assets?q=${encodeURIComponent(q)}`).then(setRows).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, [q]);
@@ -32,14 +31,14 @@ export default function Assets() {
           <tbody className="divide-y">{rows.filter((a) => !cat || a.category.name === cat).slice(0, n).map((a) => (
             <tr key={a.id} className={a.status === "sold" ? "bg-red-50/50" : ""}><td className="td font-mono text-xs">{a.assetCode}</td><td className="td font-semibold">{a.name}<div className="text-xs font-normal text-slate-500">{[a.brand, a.model].filter(Boolean).join(" ")}</div></td>
               <td className="td">{a.category.name}</td><td className="td">{a.location ?? "-"}</td><td className="td"><Badge v={a.condition} /></td><td className="td"><Badge v={a.status} />{a.status === "sold" && <div className="mt-1 text-xs font-medium text-red-700">Terjual {tgl(a.soldAt)}{Number(a.salePrice) > 0 ? ` • ${rp(a.salePrice)}` : ""}</div>}{a.status === "available" && Number(a.salePrice) > 0 && <div className="mt-1 text-xs text-slate-500">{Number(a.rentalRate) > 0 ? "Disewa & dijual" : "Hanya dijual"} {rp(a.salePrice)}</div>}</td>
-              <td className="td space-x-1 whitespace-nowrap"><button className="btn-ghost" onClick={() => api(`/api/assets/${a.id}`).then((l) => setHist({ a, l }))}>Riwayat</button><button className="btn-ghost" onClick={() => setQr(a)}>QR</button><button className="btn-ghost" onClick={() => setEdit(a)}>Ubah</button><button className="btn-ghost btn-danger" onClick={() => del(a)}>Hapus</button></td></tr>))}</tbody></table>}
+              <td className="td space-x-1 whitespace-nowrap"><button className="btn-ghost" onClick={() => api(`/api/assets/${a.id}`).then((l) => setHist({ a, l }))}>Riwayat</button><button className="btn-ghost" onClick={() => setEdit(a)}>Ubah</button><button className="btn-ghost btn-danger" onClick={() => del(a)}>Hapus</button></td></tr>))}</tbody></table>}
       </div>
       {rows.filter((a) => !cat || a.category.name === cat).length > n && <button className="btn-ghost mx-auto block" onClick={() => setN(n + 50)}>Muat lebih banyak</button>}
       {edit && <Modal title={edit.id ? "Ubah aset" : "Tambah aset"} onClose={() => setEdit(null)}>
         <form onSubmit={save} className="grid gap-3 sm:grid-cols-2">
-          {!edit.id && <Field l="Kode aset"><input name="assetCode" className="inp" required /></Field>}
-          <Field l="Nama"><input name="name" defaultValue={v.name} className="inp" required /></Field>
-          {!edit.id && <Field l="Kategori"><select name="categoryId" className="inp" required>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>}
+          {!edit.id && <Field l="Kode aset" req><input name="assetCode" className="inp" required /></Field>}
+          <Field l="Nama" req><input name="name" defaultValue={v.name} className="inp" required /></Field>
+          {!edit.id && <Field l="Kategori" req><select name="categoryId" className="inp" required>{cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>}
           <Field l="Merek"><input name="brand" defaultValue={v.brand} className="inp" /></Field><Field l="Model"><input name="model" defaultValue={v.model} className="inp" /></Field>
           <Field l="Nomor seri"><input name="serialNumber" defaultValue={v.serialNumber} className="inp" /></Field><Field l="Lokasi"><input name="location" defaultValue={v.location} className="inp" /></Field>
           {!edit.id && <><Field l="Tanggal beli"><input name="purchaseDate" type="date" className="inp" /></Field><Field l="Harga beli (Rp)"><input name="purchaseCost" type="number" min="0" className="inp" /></Field><PayFields label="Pembayaran pembelian aset" /></>}
@@ -53,9 +52,6 @@ export default function Assets() {
           <div className="sm:col-span-2"><Field l="Harga jual (Rp) — isi jika aset ini juga bisa dibeli, kosongkan jika hanya disewa"><input name="salePrice" type="number" min="0" defaultValue={v.salePrice ? Number(v.salePrice) : ""} className="inp" /></Field></div>
           <button className="btn sm:col-span-2">Simpan</button>
         </form></Modal>}
-      {qr && <Modal title="Label aset" onClose={() => setQr(null)}>
-        <div className="mx-auto flex w-56 flex-col items-center gap-2 rounded-lg border-2 border-ink p-4 text-center"><QRCodeSVG value={qr.assetCode} size={150} /><b>{qr.name}</b><span className="font-mono text-sm">{qr.assetCode}</span></div>
-        <button className="btn mt-4 w-full" onClick={() => print()}>Cetak label</button></Modal>}
       {hist && <Modal title={`Riwayat ${hist.a.name}`} onClose={() => setHist(null)}>
         {hist.l.length === 0 ? <Empty text="Belum ada catatan." /> : <ol className="space-y-3 border-l-2 border-moss/30 pl-4">{hist.l.map((x: any) => <li key={x.id}><p className="text-sm font-semibold">{x.description}</p><p className="text-xs text-slate-500">{new Date(x.timestamp).toLocaleString("id-ID")} oleh {x.user.name}</p></li>)}</ol>}
       </Modal>}

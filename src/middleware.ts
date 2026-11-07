@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(t, new TextEncoder().encode(process.env.JWT_SECRET!));
     const p = req.nextUrl.pathname;
-    if (payload.role === "employee") return /^\/(overtime|reimburse|profile)/.test(p) ? NextResponse.next() : NextResponse.redirect(new URL("/overtime", req.url));
+    if (payload.role === "employee") return /^\/(overtime|reimburse|profile|maintenance)/.test(p) ? NextResponse.next() : NextResponse.redirect(new URL("/overtime", req.url));
     if (payload.role === "user" && /^\/(dashboard|assets|maintenance|users|finance|employees|payroll|withdrawals|stock-opname|overtime|reimburse)/.test(p)) return NextResponse.redirect(new URL("/catalog", req.url));
     if (payload.role === "finance" && !/^\/(finance|profile)/.test(p)) return NextResponse.redirect(new URL("/finance", req.url));
     if (payload.role === "staff" && /^\/finance/.test(p)) return NextResponse.redirect(new URL("/dashboard", req.url));
