@@ -88,12 +88,47 @@ Akun administrator tim (password `123456789`; dibuat oleh `npm run db:seed`, bol
 - Pembayaran masuk keuangan sebagai "Penjualan aset", "Premi asuransi", dan "PPN keluaran 11%".
 - Setelah memperbarui project dari versi lama, jalankan `npx prisma db push` lalu `npm run db:seed` (seed juga membersihkan kategori "Layanan Internet" dari database lama).
 
-## Akun karyawan, lembur, dan reimburse
+## Akun karyawan, lembur, reimburse, dan perawatan aset
 - Setiap karyawan punya akun login: **email = nama depan + `@asetku.org`**, **password awal `123456789`** (contoh `agus@asetku.org`). Dibuat otomatis oleh `npm run db:seed` dan saat admin menambah karyawan baru. Karyawan nonaktif tidak bisa login.
-- Akun karyawan **hanya bisa membuka** menu **Input Lembur**, **Reimburse**, dan **Profil**.
+- Akun karyawan/facility dapat mengakses menu **Input Lembur**, **Reimburse**, **Perawatan Aset**, dan **Profil**.
+- **Perawatan Aset:** tim facility/karyawan dapat memantau aset yang rusak atau terjadwal servis, melakukan penjadwalan, dan mencatat perbaikan aset langsung dari antarmuka mereka.
 - **Lembur:** karyawan mengisi tanggal, jam, kegiatan, dan foto bukti. Admin menyetujui di menu **Lembur Karyawan**; nominal dihitung otomatis (upah per jam = (gaji pokok + tunjangan) / 173; hari kerja jam pertama 1,5x lalu 2x; hari libur 2x, 3x, 4x) dan langsung masuk kolom lembur di slip gaji periode terkait. Jika slip bulan itu sudah dibayar, otomatis masuk ke slip periode berikutnya.
 - **Reimburse:** karyawan memilih jenis biaya (BBM, makan, parkir/tol, perjalanan dinas, ATK, pulsa/internet, dan lain-lain), mengisi keperluan, dan mengunggah foto nota. Admin membayar di menu **Reimburse Karyawan**; pembayaran langsung tercatat sebagai kas keluar kategori "Reimburse karyawan" di Laporan Keuangan.
 - Setelah memperbarui dari versi lama: `npx prisma db push`, lalu `npm run db:seed`.
+
+## Autentikasi: Registrasi Akun & Lupa Password
+
+### 1. Registrasi Akun Penyewa Baru
+- Di halaman `/login`, klik tombol **"Belum punya akun? Daftar"**.
+- Masukkan Nama Lengkap, Email, Password (min. 8 karakter kombinasi huruf & angka), serta Nomor WhatsApp (opsional).
+- Akun tersimpan dengan role `user` dan dapat langsung digunakan untuk menyewa atau membeli aset.
+
+### 2. Fitur Lupa Password & Reset Password
+Sistem mendukung 2 cara pengujian yang fleksibel:
+
+#### A. Mode Otomatis / Local Development (Zero-Config, Tanpa Setup Email)
+- Sangat praktis untuk anggota tim atau pengujian di laptop lokal tanpa perlu akun email/internet khusus.
+- Jika variabel SMTP di `.env` dibiarkan kosong, sistem **tidak akan error**.
+- Saat pengguna mengajukan lupa password di `/forgot`, tautan reset password **otomatis dicetak langsung di Terminal/Console tempat `npm run dev` berjalan**:
+  ```text
+  [DEV] Tautan reset password untuk user@example.com: http://localhost:3000/reset?token=...
+  ```
+- Salin atau klik tautan tersebut di browser untuk membuat password baru.
+
+#### B. Mode Pengiriman Email Sungguhan (SMTP Provider)
+- Jika ingin email instruksi reset password benar-benar mendarat di Inbox Gmail pengguna:
+  1. Buat **App Password (Sandi Aplikasi)** 16 digit pada akun Google pengirim (Google Account → Security → 2-Step Verification → App Passwords).
+  2. Buka file `.env` di komputer lokal, lalu isi konfigurasi SMTP berikut:
+     ```env
+     SMTP_HOST="smtp.gmail.com"
+     SMTP_PORT="587"
+     SMTP_USER="alamat-email-pengirim@gmail.com"
+     SMTP_PASS="sandi-aplikasi-16-karakter"
+     MAIL_FROM="AsetKu Corporate <alamat-email-pengirim@gmail.com>"
+     ```
+  3. **PENTING:** Restart server Next.js di terminal (`Ctrl + C` lalu `npm run dev`) setiap kali mengubah file `.env`.
+  4. Pengguna akan menerima email resmi berformat HTML profesional lengkap dengan panduan langkah demi langkah dan tombol "Atur Ulang Password" (berlaku 1 jam).
+  > **Catatan Keamanan:** File `.env` sudah masuk ke `.gitignore` sehingga kredensial pribadi tidak akan pernah ter-upload ke repositori publik GitHub.
 
 | Karyawan | Email login |
 |---|---|
